@@ -1,0 +1,13 @@
+name: inception
+
+services:
+  proxy:
+    image: inception/nginx
+    container_name: nginx_container
+    pull_policy: build
+    build:
+      context: ./requirements/nginx
+    ports:
+      - 433:433
+      - 80:80    # DEDBUG, remove later
+
