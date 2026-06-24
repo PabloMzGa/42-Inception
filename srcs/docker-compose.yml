@@ -8,6 +8,20 @@ services:
     build:
       context: ./requirements/nginx
     ports:
-      - 433:433
-      - 80:80    # DEDBUG, remove later
+      - 8433:433
+      - 8080:80    # DEDBUG, remove later
+
+  db:
+    image: inception/mariadb
+    container_name: mariadb_container
+    pull_policy: build
+    build:
+      context: ./requirements/mariadb
+    secrets:
+      db_user:
+        file: ../secrets/db_user
+      db_pass:
+        file: ../secrets/db_pass
+      db_name:
+        file: ../secrets/db_name
 
