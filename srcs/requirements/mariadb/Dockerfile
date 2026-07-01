@@ -8,7 +8,6 @@ COPY tools/init.sh /usr/local/bin/init.sh
 RUN chmod +x /usr/local/bin/init.sh
 
 
-ENTRYPOINT ["/docker-entrypoint-initdb.d/init.sh"]
 
-CMD ["mysqld"]
+ENTRYPOINT ["/usr/local/bin/init.sh"]
 

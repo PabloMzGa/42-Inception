@@ -18,10 +18,25 @@ services:
     build:
       context: ./requirements/mariadb
     secrets:
-      db_user:
-        file: ../secrets/db_user
-      db_pass:
-        file: ../secrets/db_pass
-      db_name:
-        file: ../secrets/db_name
+      - db_user
+      - db_pass
+      - db_name
+    volumes:
+      - db_data:/var/lib/mysql
 
+
+secrets:
+  db_user:
+    file: ../secrets/db_user
+  db_pass:
+    file: ../secrets/db_pass
+  db_name:
+    file: ../secrets/db_name
+
+volumes:
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_DIR}
