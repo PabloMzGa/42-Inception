@@ -2,8 +2,8 @@ name: inception
 
 services:
   proxy:
-    image: inception/nginx
-    container_name: nginx_container
+    image: ${NGINX_IMAGE}
+    container_name: ${NGINX_CONTAINER}
     pull_policy: build
     build:
       context: ./requirements/nginx
@@ -12,11 +12,13 @@ services:
       - 8080:80    # DEDBUG, remove later
 
   db:
-    image: inception/mariadb
-    container_name: mariadb_container
+    image: ${MARIADB_IMAGE}
+    container_name: ${MARIADB_CONTAINER}
     pull_policy: build
     build:
       context: ./requirements/mariadb
+    environment:
+      DB_DIR: ${DB_DIR}
     secrets:
       - db_user
       - db_pass

@@ -1,13 +1,34 @@
 FROM debian:12
 
-RUN apt update && \
-    apt install -y --no-install-recommends mariadb-server && \
-    rm -rf /var/lib/apt/lists/*
+# ---------------------------------------------------------
+# 1. Actualizar e instalar MariaDB + herramientas necesarias
+# ---------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    mariadb-server \
+    mariadb-client \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
 
+# ---------------------------------------------------------
+# 2. Crear directorios necesarios para MariaDB
+# ---------------------------------------------------------
+RUN mkdir -p /run/mysqld \
+    && mkdir -p /var/lib/mysql \
+    && chown -R mysql:mysql /run/mysqld \
+    && chown -R mysql:mysql /var/lib/mysql
+
+# ---------------------------------------------------------
+# 3. Copiar script de inicialización
+# ---------------------------------------------------------
 COPY tools/init.sh /usr/local/bin/init.sh
 RUN chmod +x /usr/local/bin/init.sh
 
+# ---------------------------------------------------------
+# 4. Exponer puerto de MariaDB
+# ---------------------------------------------------------
+EXPOSE 3306
 
-
+# ---------------------------------------------------------
+# 5. Ejecutar script de inicialización como ENTRYPOINT
+# ---------------------------------------------------------
 ENTRYPOINT ["/usr/local/bin/init.sh"]
-
