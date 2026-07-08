@@ -12,6 +12,8 @@ services:
       - 80:80    # DEDBUG, remove later
     volumes:
       - wp_data:/var/www/html
+    environment:
+    - DOMAIN=${DOMAIN}
     networks:
       - public_net
       - private_net
@@ -42,6 +44,12 @@ services:
       - db_pass
       - db_name
       - db_host
+      - wp_admin_email
+      - wp_admin_pass
+      - wp_admin_user
+      - wp_user_email
+      - wp_user_pass
+      - wp_user
     volumes:
       - wp_data:/var/www/html
     networks:
@@ -57,6 +65,18 @@ secrets:
     file: ../secrets/db_name.txt
   db_host:
     file: ../secrets/db_host.txt
+  wp_admin_email:
+    file: ../secrets/wp_admin_email.txt
+  wp_admin_pass:
+    file: ../secrets/wp_admin_pass.txt
+  wp_admin_user:
+    file: ../secrets/wp_admin_user.txt
+  wp_user_email:
+    file: ../secrets/wp_user_email.txt
+  wp_user_pass:
+    file: ../secrets/wp_user_pass.txt
+  wp_user:
+    file: ../secrets/wp_user.txt
 
 volumes:
   db_data:

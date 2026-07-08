@@ -5,7 +5,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
-    server_name pabmart2.42.fr;
+    server_name ${DOMAIN};
 
     # Redirige todo el tráfico HTTP (80) hacia HTTPS (443) de forma permanente
     return 301 https://$host$request_uri;

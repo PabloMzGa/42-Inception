@@ -3,6 +3,7 @@ FROM debian:12
 # ---------------------------------------------------------
 # 1. Instalar PHP-FPM y extensiones necesarias para WordPress
 # ---------------------------------------------------------
+# NOTA: He unido los apt-get en una sola capa para reducir espacio, incluyendo mariadb-client
 RUN apt update && apt install -y \
     php8.2-fpm \
     php8.2-mysql \
@@ -15,12 +16,17 @@ RUN apt update && apt install -y \
     php8.2-fileinfo \
     php8.2-cli \
     php8.2-common \
+    mariadb-client \
     curl \
     tar \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt update && apt install -y mariadb-client && apt clean && rm -rf /var/lib/apt/lists/*
-
+# ---------------------------------------------------------
+# [AÑADIDO] 1.5. Instalar WP-CLI (Para la automatización de usuarios/temas)
+# ---------------------------------------------------------
+RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
 
 # ---------------------------------------------------------
 # 2. Descargar WordPress
@@ -30,9 +36,11 @@ RUN curl -o /tmp/wordpress.tar.gz https://wordpress.org/latest.tar.gz \
     && rm /tmp/wordpress.tar.gz
 
 # ---------------------------------------------------------
-# 3. Copiar WordPress al directorio web
+# 3. Copiar WordPress al directorio web y asegurar PID de PHP
 # ---------------------------------------------------------
-RUN mkdir -p /var/www/html \
+# REQUISITO DEBIAN: php-fpm necesita que el directorio /run/php exista para guardar su archivo .pid,
+# si no existe en la imagen limpia, crashea al arrancar en el Entrypoint.
+RUN mkdir -p /var/www/html /run/php \
     && cp -r /tmp/wordpress/* /var/www/html \
     && chown -R www-data:www-data /var/www/html
 
