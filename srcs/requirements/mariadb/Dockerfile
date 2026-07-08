@@ -1,7 +1,7 @@
 FROM debian:12
 
 # ---------------------------------------------------------
-# 1. Actualizar e instalar MariaDB + herramientas necesarias
+# 1. Update and install MariaDB + required tools
 # ---------------------------------------------------------
 RUN apt update && apt install -y \
     mariadb-server \
@@ -10,7 +10,7 @@ RUN apt update && apt install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------
-# 2. Crear directorios necesarios para MariaDB
+# 2. Create required directories for MariaDB
 # ---------------------------------------------------------
 RUN mkdir -p /run/mysqld \
     && mkdir -p /var/lib/mysql \
@@ -18,7 +18,7 @@ RUN mkdir -p /run/mysqld \
     && chown -R mysql:mysql /var/lib/mysql
 
 # ---------------------------------------------------------
-# 3. Copiar script de inicialización
+# 3. Copy initialization script
 # ---------------------------------------------------------
 COPY tools/db-init.sh /usr/local/bin/db-init.sh
 RUN chmod +x /usr/local/bin/db-init.sh
@@ -26,11 +26,11 @@ RUN chmod +x /usr/local/bin/db-init.sh
 COPY conf/99-docker.cnf /etc/mysql/mariadb.conf.d/99-docker.cnf
 
 # ---------------------------------------------------------
-# 4. Exponer puerto de MariaDB
+# 4. Expose MariaDB port
 # ---------------------------------------------------------
 EXPOSE 3306
 
 # ---------------------------------------------------------
-# 5. Ejecutar script de inicialización como ENTRYPOINT
+# 5. Run initialization script as ENTRYPOINT
 # ---------------------------------------------------------
 ENTRYPOINT ["/usr/local/bin/db-init.sh"]

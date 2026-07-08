@@ -1,5 +1,5 @@
 # =========================================================
-# 1. BLOQUE HTTP (Puerto 80) - REDIRECCIÓN AUTOMÁTICA
+# 1. HTTP BLOCK (Port 80) - AUTOMATIC REDIRECTION
 # =========================================================
 server {
     listen 80 default_server;
@@ -7,44 +7,44 @@ server {
 
     server_name ${DOMAIN};
 
-    # Redirige todo el tráfico HTTP (80) hacia HTTPS (443) de forma permanente
+    # Redirects all HTTP traffic (80) to HTTPS (443) permanently
     return 301 https://$host$request_uri;
 }
 
 # =========================================================
-# 2. BLOQUE HTTPS (Puerto 443) - CONFIGURACIÓN SEGURA
+# 2. HTTPS BLOCK (Port 443) - SECURE CONFIGURATION
 # =========================================================
 server {
-    # Escuchar únicamente en el puerto 443 con SSL activo
+    # Listen only on port 443 with SSL active
     listen 443 ssl default_server;
     listen [::]:443 ssl default_server;
 
     server_name pabmart2.42.fr;
 
-    # Rutas de los certificados SSL autoafirmados
+    # Paths to the self-signed SSL certificates
     ssl_certificate /etc/nginx/ssl/inception.crt;
     ssl_certificate_key /etc/nginx/ssl/inception.key;
 
-    # Requisito estricto de Inception: Solo permitir TLSv1.3
+    # Strict Inception requirement: Only allow TLSv1.3
     ssl_protocols TLSv1.3;
 
-    # Ruta raíz y archivos de índice
+    # Root directory and index files
     root /var/www/html;
     index index.php index.html index.htm;
 
-    # Regla de manejo de URLs para WordPress
+    # URL handling rule for WordPress
     location / {
         try_files $uri $uri/ /index.php?$args;
     }
 
-    # Procesamiento de archivos PHP dirigidos al contenedor backend
+    # Processing of PHP files directed to the backend container
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
 
-        # Parámetro obligatorio para que WordPress sepa qué archivo ejecutar
+        # Mandatory parameter for WordPress to know which file to execute
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 
-        # Conexión por TCP al contenedor de WordPress en el puerto 9000
+        # TCP connection to the WordPress container on port 9000
         fastcgi_pass wordpress:9000;
     }
 }

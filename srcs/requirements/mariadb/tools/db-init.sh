@@ -3,64 +3,64 @@
 set -e
 
 # ---------------------------------------------------------
-# 0. Leer secretos desde /run/secrets (Limpia \r y \n)
+# 0. Read secrets from /run/secrets (Cleans \r and \n)
 # ---------------------------------------------------------
 MYSQL_USER=$(cat /run/secrets/db_user | tr -d '\r\n')
 MYSQL_PASSWORD=$(cat /run/secrets/db_pass | tr -d '\r\n')
 MYSQL_DATABASE=$(cat /run/secrets/db_name | tr -d '\r\n')
 
-echo "🚀 Iniciando script de configuración de MariaDB..."
+echo "🚀 Starting MariaDB configuration script..."
 
 # ---------------------------------------------------------
-# 1. Comprobar que el volumen está montado en /var/lib/mysql
+# 1. Check that the volume is mounted at /var/lib/mysql
 # ---------------------------------------------------------
 if [ ! -d "/var/lib/mysql" ]; then
-    echo "❌ ERROR: El volumen no está montado en /var/lib/mysql."
+    echo "❌ ERROR: The volume is not mounted at /var/lib/mysql."
     exit 1
 fi
 
 # ---------------------------------------------------------
-# 2. Inicializar sistema de tablas básico si no existe
+# 2. Initialize basic system tables if they do not exist
 # ---------------------------------------------------------
-# Esto asegura que la base de datos del sistema está instalada si el volumen viene virgen,
-# pero no interfiere con la creación posterior de tu usuario customizado.
+# This ensures the system database is installed if the volume is empty,
+# but does not interfere with the subsequent creation of your custom user.
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "⚙️ Creando tablas del sistema de MariaDB..."
+    echo "⚙️ Creating MariaDB system tables..."
     mysql_install_db --user=mysql --datadir=/var/lib/mysql
 fi
 
 # ---------------------------------------------------------
-# 3. Arrancar MariaDB temporalmente sin red para verificar/configurar
+# 3. Start MariaDB temporarily without networking for verification/configuration
 # ---------------------------------------------------------
-echo "⏳ Arrancando MariaDB temporal para chequeo de seguridad..."
+echo "⏳ Starting temporary MariaDB for security check..."
 mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking &
 TEMP_PID=$!
 
 # ---------------------------------------------------------
-# 4. Esperar a que el servidor temporal arranque
+# 4. Wait for the temporary server to start
 # ---------------------------------------------------------
 while ! mysqladmin ping --silent; do
     sleep 1
 done
 
 # ---------------------------------------------------------
-# 5. CHECK REAL: ¿Existe la DB y el usuario funciona?
+# 5. REAL CHECK: Does the DB exist and does the user work?
 # ---------------------------------------------------------
-# Intentamos usar la base de datos con las credenciales que pasamos por secretos.
-# Si el comando tiene éxito (devuelve 0), significa que ya está todo configurado en el volumen.
+# We try to use the database with the credentials passed via secrets.
+# If the command succeeds (returns 0), it means everything is already configured in the volume.
 if mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "USE \`${MYSQL_DATABASE}\`;" >/dev/null 2>&1; then
-    echo "🎉 Check completado: El usuario y la base de datos ya existen y están operativos."
-    echo "🛑 Apagando servidor temporal..."
+    echo "🎉 Check completed: The user and database already exist and are operational."
+    echo "🛑 Shutting down temporary server..."
     mysqladmin shutdown
 
-    echo "🚀 Arrancando MariaDB definitivo en foreground..."
+    echo "🚀 Starting definitive MariaDB in the foreground..."
     exec su mysql -s /bin/sh -c "mysqld"
 fi
 
 # ---------------------------------------------------------
-# 6. Si el check falló: Crear base de datos, usuario y privilegios
+# 6. If the check failed: Create database, user, and privileges
 # ---------------------------------------------------------
-echo "⚙️ El check falló o es el primer arranque. Configurando base de datos de Inception..."
+echo "⚙️ The check failed or this is the first boot. Configuring Inception database..."
 
 mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
@@ -70,15 +70,15 @@ FLUSH PRIVILEGES;
 EOF
 
 # ---------------------------------------------------------
-# 7. Parar MariaDB temporal de forma limpia
+# 7. Stop temporary MariaDB cleanly
 # ---------------------------------------------------------
-echo "🛑 Configuración aplicada. Apagando servidor temporal..."
+echo "🛑 Configuration applied. Shutting down temporary server..."
 mysqladmin shutdown
 
-echo "✔ Inicialización completada con éxito."
-echo "🚀 Arrancando MariaDB definitivo en foreground como usuario mysql..."
+echo "✔ Initialization completed successfully."
+echo "🚀 Starting definitive MariaDB in the foreground as mysql user..."
 
 # ---------------------------------------------------------
-# 8. Arrancar MariaDB en foreground como usuario mysql
+# 8. Start MariaDB in the foreground as mysql user
 # ---------------------------------------------------------
 exec su mysql -s /bin/sh -c "mysqld"

@@ -3,14 +3,14 @@ bind-address = 0.0.0.0
 skip-host-cache
 skip-name-resolve
 
-# Evita problemas de permisos en Docker
+# Prevents permission issues in Docker
 user = mysql
 
-# Asegura que el socket se cree correctamente
+# Ensures the socket is created correctly
 socket = /run/mysqld/mysqld.sock
 
-# Directorio de datos
+# Data directory
 datadir = /var/lib/mysql
 
-# Evita fallos de AIO en contenedores
+# Prevents AIO failures in containers
 innodb_use_native_aio = 0

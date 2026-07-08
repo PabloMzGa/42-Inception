@@ -1,12 +1,21 @@
 #!/bin/sh
 set -e
 
-echo PATATA
+echo "🚀 Starting Nginx configuration script..."
 
-# Lee la plantilla fija y genera el .conf final usando el nombre del dominio dinámico
+# ---------------------------------------------------------
+# 1. Generate the final configuration from the template
+# ---------------------------------------------------------
+# Reads the fixed template and generates the final .conf file using the dynamic domain name
 envsubst '${DOMAIN}' < /etc/nginx/wordpress.template > /etc/nginx/sites-enabled/${DOMAIN}.conf
 
-# Eliminar el default residual
+# ---------------------------------------------------------
+# 2. Remove residual default configurations
+# ---------------------------------------------------------
+# Deletes the default Nginx configuration file to prevent conflicts
 rm -f /etc/nginx/sites-enabled/default
 
+# ---------------------------------------------------------
+# 3. Launch Nginx in the foreground
+# ---------------------------------------------------------
 exec nginx -g "daemon off;"

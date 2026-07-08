@@ -2,15 +2,16 @@
 
 set -e
 
-# ---------------------------------------------------------
-# 0. Leer secretos desde /run/secrets
-# ---------------------------------------------------------
+# =========================================================
+# 0. READ SECRETS AND ENVIRONMENT VARIABLES
+# =========================================================
+# Read database credentials from Docker secrets (Cleans \r and \n)
 MYSQL_USER=$(cat /run/secrets/db_user | tr -d '\r\n')
 MYSQL_PASSWORD=$(cat /run/secrets/db_pass | tr -d '\r\n')
 MYSQL_DATABASE=$(cat /run/secrets/db_name | tr -d '\r\n')
 MYSQL_HOST=$(cat /run/secrets/db_host 2>/dev/null | tr -d '\r\n' || echo "db")
 
-# Variables para WordPress (Es mejor leerlas de secretos/env también)
+# Read WordPress credentials from Docker secrets
 WP_ADMIN_USER=$(cat /run/secrets/wp_admin_user | tr -d '\r\n')
 WP_ADMIN_PASS=$(cat /run/secrets/wp_admin_pass | tr -d '\r\n')
 WP_ADMIN_EMAIL=$(cat /run/secrets/wp_admin_email | tr -d '\r\n')
@@ -19,31 +20,36 @@ WP_USER=$(cat /run/secrets/wp_user | tr -d '\r\n')
 WP_USER_PASS=$(cat /run/secrets/wp_user_pass | tr -d '\r\n')
 WP_USER_EMAIL=$(cat /run/secrets/wp_user_email | tr -d '\r\n')
 
-# Nos movemos al directorio de WordPress para que wp-cli sepa dónde trabajar
+# Navigate to the WordPress root directory so wp-cli targets the correct path
 cd /var/www/html
 
-# ---------------------------------------------------------
-# 1. Esperar a que MariaDB esté accesible
-# ---------------------------------------------------------
-echo "⏳ Esperando a MariaDB en ${MYSQL_HOST}..."
+echo "🚀 Starting WordPress initialization script..."
+
+# =========================================================
+# 1. WAIT FOR MARIADB ACCESSIBILITY
+# =========================================================
+# Loop until the database container is up, configured, and accepting connections
+echo "⏳ Waiting for MariaDB at ${MYSQL_HOST}..."
 until mysql -h"${MYSQL_HOST}" -u"${MYSQL_USER}" --password="${MYSQL_PASSWORD}" -e "SELECT 1;" >/dev/null 2>&1; do
     sleep 1
 done
-echo "✔ MariaDB está accesible"
+echo "✔ MariaDB is accessible"
 
-# ---------------------------------------------------------
-# 2. Descargar WordPress (Por si el volumen está vacío)
-# ---------------------------------------------------------
+# =========================================================
+# 2. DOWNLOAD WORDPRESS CORE
+# =========================================================
+# Downloads the core files only if the mounted volume is currently empty
 if [ ! -f "wp-load.php" ]; then
-    echo "📥 Descargando WordPress..."
+    echo "📥 Downloading WordPress core files..."
     wp core download --allow-root
 fi
 
-# ---------------------------------------------------------
-# 3. Crear wp-config.php de forma nativa con wp-cli
-# ---------------------------------------------------------
+# =========================================================
+# 3. GENERATE WP-CONFIG.PHP
+# =========================================================
+# Securely builds the native wp-config.php file using wp-cli
 if [ ! -f "wp-config.php" ]; then
-    echo "⚙️ Generando wp-config.php de forma segura..."
+    echo "⚙️ Generating wp-config.php securely..."
     wp config create \
         --dbname="${MYSQL_DATABASE}" \
         --dbuser="${MYSQL_USER}" \
@@ -52,14 +58,17 @@ if [ ! -f "wp-config.php" ]; then
         --allow-root
 fi
 
-# ---------------------------------------------------------
-# 4. Instalación Core y Automatización de Usuarios + Temas
-# ---------------------------------------------------------
-# Comprobamos si WordPress ya está instalado en la Base de Datos
+# =========================================================
+# 4. CORE INSTALLATION AND AUTOMATION (USERS & THEMES)
+# =========================================================
+# Check if WordPress is already installed inside the database schema
 if ! wp core is-installed --allow-root; then
-    echo "🚀 Instalando WordPress..."
+    echo "🚀 Installing WordPress database tables..."
 
-    # A) Instalación principal y creación del Administrador (¡SIN la palabra admin!)
+    # ---------------------------------------------------------
+    # A) Main installation and Administrator creation
+    # ---------------------------------------------------------
+    # Strict 42 security rule: Do NOT use 'admin' or 'administrator' as the username!
     wp core install \
         --url="pabmart2.42.fr" \
         --title="Inception - pabmart2" \
@@ -69,10 +78,13 @@ if ! wp core is-installed --allow-root; then
         --skip-email \
         --allow-root
 
-    echo "✔ Administrador de WordPress creado con éxito."
+    echo "✔ WordPress Administrator account created successfully."
 
-    # B) Creación del Segundo Usuario Obligatorio (Rol de autor/editor)
-    echo "👤 Creando el segundo usuario..."
+    # ---------------------------------------------------------
+    # B) Second mandatory user creation
+    # ---------------------------------------------------------
+    # Creates the regular non-admin user required by the subject (Author/Editor role)
+    echo "👤 Creating the second regular user..."
     wp user create \
         "${WP_USER}" \
         "${WP_USER_EMAIL}" \
@@ -80,27 +92,34 @@ if ! wp core is-installed --allow-root; then
         --user_pass="${WP_USER_PASS}" \
         --allow-root
 
-    echo "✔ Segundo usuario creado."
+    echo "✔ Second user created successfully."
 
-    # C) Automatización: Descargar y activar una Plantilla (Tema)
-    # Puedes usar el nombre de cualquier tema del repositorio de WordPress (ej: 'twentytwentyfour', 'astra', 'oceanwp')
-    echo "🎨 Instalando y activando la plantilla Astra..."
+    # ---------------------------------------------------------
+    # C) Theme deployment automation
+    # ---------------------------------------------------------
+    # Installs and activates a clean, lightweight theme from the WordPress repository
+    echo "🎨 Installing and activating the Astra theme..."
     wp theme install astra --activate --allow-root
 
-    # D) Opcional: Instalar plugins útiles (ej: Redis Cache, que te lo pedirán en el bonus)
+    # ---------------------------------------------------------
+    # D) Optional Bonus Plugins
+    # ---------------------------------------------------------
+    # Uncomment if you are implementing the Redis Cache bonus feature
     # wp plugin install redis-cache --activate --allow-root
 
-    echo "🎉 ¡Todo el entorno de WordPress ha sido automatizado!"
+    echo "🎉 WordPress environment has been fully automated and configured!"
 fi
 
-# ---------------------------------------------------------
-# 5. Permisos correctos
-# ---------------------------------------------------------
-echo "🔧 Ajustando permisos de los archivos generados..."
+# =========================================================
+# 5. FILE PERMISSIONS ADJUSTMENT
+# =========================================================
+# Recursively sets proper ownership so Nginx/PHP-FPM can modify files safely
+echo "🔧 Adjusting permissions for the generated core files..."
 chown -R www-data:www-data /var/www/html
 
-# ---------------------------------------------------------
-# 6. Arrancar PHP-FPM en foreground
-# ---------------------------------------------------------
-echo "🚀 Arrancando PHP-FPM..."
+# =========================================================
+# 6. LAUNCH PHP-FPM
+# =========================================================
+# Runs PHP-FPM daemon in the foreground (-F) to keep the container active
+echo "🚀 Starting PHP-FPM in the foreground..."
 exec php-fpm8.2 -F
