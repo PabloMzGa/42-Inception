@@ -8,8 +8,13 @@ services:
     build:
       context: ./requirements/nginx
     ports:
-      - 8433:433
-      - 8080:80    # DEDBUG, remove later
+      - 443:443
+      - 80:80    # DEDBUG, remove later
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - public_net
+      - private_net
 
   db:
     image: ${MARIADB_IMAGE}
@@ -17,23 +22,41 @@ services:
     pull_policy: build
     build:
       context: ./requirements/mariadb
-    environment:
-      DB_DIR: ${DB_DIR}
     secrets:
       - db_user
       - db_pass
       - db_name
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - private_net
+
+  wordpress:
+    image: ${WORDPRESS_IMAGE}
+    container_name: ${WORDPRESS_CONTAINER}
+    pull_policy: build
+    build:
+      context: ./requirements/wordpress
+    secrets:
+      - db_user
+      - db_pass
+      - db_name
+      - db_host
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - private_net
 
 
 secrets:
   db_user:
-    file: ../secrets/db_user
+    file: ../secrets/db_user.txt
   db_pass:
-    file: ../secrets/db_pass
+    file: ../secrets/db_pass.txt
   db_name:
-    file: ../secrets/db_name
+    file: ../secrets/db_name.txt
+  db_host:
+    file: ../secrets/db_host.txt
 
 volumes:
   db_data:
@@ -42,3 +65,15 @@ volumes:
       type: none
       o: bind
       device: ${DB_DIR}
+  wp_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WP_DIR}
+
+networks:
+  public_net:
+  private_net:
+
+

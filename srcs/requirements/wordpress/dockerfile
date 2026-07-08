@@ -1,0 +1,58 @@
+FROM debian:12
+
+# ---------------------------------------------------------
+# 1. Instalar PHP-FPM y extensiones necesarias para WordPress
+# ---------------------------------------------------------
+RUN apt update && apt install -y \
+    php8.2-fpm \
+    php8.2-mysql \
+    php8.2-curl \
+    php8.2-xml \
+    php8.2-zip \
+    php8.2-gd \
+    php8.2-mbstring \
+    php8.2-exif \
+    php8.2-fileinfo \
+    php8.2-cli \
+    php8.2-common \
+    curl \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt update && apt install -y mariadb-client && apt clean && rm -rf /var/lib/apt/lists/*
+
+
+# ---------------------------------------------------------
+# 2. Descargar WordPress
+# ---------------------------------------------------------
+RUN curl -o /tmp/wordpress.tar.gz https://wordpress.org/latest.tar.gz \
+    && tar -xzf /tmp/wordpress.tar.gz -C /tmp \
+    && rm /tmp/wordpress.tar.gz
+
+# ---------------------------------------------------------
+# 3. Copiar WordPress al directorio web
+# ---------------------------------------------------------
+RUN mkdir -p /var/www/html \
+    && cp -r /tmp/wordpress/* /var/www/html \
+    && chown -R www-data:www-data /var/www/html
+
+# ---------------------------------------------------------
+# 4. Copiar script de inicialización
+# ---------------------------------------------------------
+COPY tools/wp-init.sh /usr/local/bin/wp-init.sh
+RUN chmod +x /usr/local/bin/wp-init.sh
+
+# ---------------------------------------------------------
+# 5. Copiar configuración de PHP-FPM (pool)
+# ---------------------------------------------------------
+COPY conf/www.conf /etc/php/8.2/fpm/pool.d/www.conf
+
+# ---------------------------------------------------------
+# 6. Exponer el socket/puerto de PHP-FPM (interno)
+# ---------------------------------------------------------
+EXPOSE 9000
+
+# ---------------------------------------------------------
+# 7. Ejecutar script de inicialización
+# ---------------------------------------------------------
+ENTRYPOINT ["/usr/local/bin/wp-init.sh"]

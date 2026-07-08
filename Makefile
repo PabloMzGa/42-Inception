@@ -6,7 +6,7 @@
 #    By: pablo <pablo@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/20 14:34:30 by pabmart2          #+#    #+#              #
-#    Updated: 2026/07/07 14:06:28 by pablo            ###   ########.fr        #
+#    Updated: 2026/07/08 02:22:16 by pablo            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,26 +24,24 @@ setup:
 $(NAME): setup
 	@docker compose -f srcs/docker-compose.yml up -d --build
 
+# Regla base que acepta modificadores externos
 down:
-	@docker compose -f srcs/docker-compose.yml down
+	@docker compose -f srcs/docker-compose.yml down $(FLAGS)
 
 clean:
-	@echo "🧹 Limpiando contenedores e imágenes (volúmenes se conservan)..."
-	@docker compose -f srcs/docker-compose.yml down
-
-	@echo "🗑️ Borrando imágenes..."
-	@docker rmi $(NGINX_IMAGE) $(MARIADB_IMAGE) $(WORDPRESS_IMAGE) || true
+	@echo "🧹 Limpiando contenedores e imágenes..."
+	# --rmi all borra todas las imágenes asociadas al compose, pero mantiene volúmenes
+	@$(MAKE) --no-print-directory down FLAGS="--rmi all"
 
 fclean: clean
-	@echo "🔥 Limpiando volúmenes y carpetas del host..."
-	@docker compose -f srcs/docker-compose.yml down --volumes
+	@echo "🔥 Eliminando VOLÚMENES NOMBRADOS de Docker..."
+	# --volumes borra los volúmenes de Docker de la memoria
+	@$(MAKE) --no-print-directory down FLAGS="--volumes"
 
-	@for VOL in $$(docker volume ls -q | grep $(NAME)); do \
-		docker volume rm $$VOL; \
-	done
-
-	@rm -rf $(DB_DIR)
-	@rm -rf $(WP_DIR)
+	@echo "📂 Eliminando carpetas físicas del host con sudo..."
+	@if [ -d "$(DB_DIR)" ]; then sudo rm -rf $(DB_DIR); fi
+	@if [ -d "$(WP_DIR)" ]; then sudo rm -rf $(WP_DIR); fi
+	@echo "✨ Sistema completamente limpio."
 
 re: clean
 	@$(MAKE) --no-print-directory all
