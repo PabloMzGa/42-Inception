@@ -44,7 +44,8 @@ while ! mysqladmin ping --silent; do
 done
 
 # ---------------------------------------------------------
-# 5. REAL CHECK: Does the DB exist and does the user work?
+# 5. Checks for the DB and correct user
+
 # ---------------------------------------------------------
 # We try to use the database with the credentials passed via secrets.
 # If the command succeeds (returns 0), it means everything is already configured in the volume.

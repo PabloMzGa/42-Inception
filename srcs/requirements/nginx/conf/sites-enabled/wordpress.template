@@ -1,17 +1,4 @@
 # =========================================================
-# 1. HTTP BLOCK (Port 80) - AUTOMATIC REDIRECTION
-# =========================================================
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-
-    server_name ${DOMAIN};
-
-    # Redirects all HTTP traffic (80) to HTTPS (443) permanently
-    return 301 https://$host$request_uri;
-}
-
-# =========================================================
 # 2. HTTPS BLOCK (Port 443) - SECURE CONFIGURATION
 # =========================================================
 server {
@@ -19,7 +6,7 @@ server {
     listen 443 ssl default_server;
     listen [::]:443 ssl default_server;
 
-    server_name pabmart2.42.fr;
+    server_name ${DOMAIN};
 
     # Paths to the self-signed SSL certificates
     ssl_certificate /etc/nginx/ssl/inception.crt;

@@ -9,7 +9,7 @@ set -e
 MYSQL_USER=$(cat /run/secrets/db_user | tr -d '\r\n')
 MYSQL_PASSWORD=$(cat /run/secrets/db_pass | tr -d '\r\n')
 MYSQL_DATABASE=$(cat /run/secrets/db_name | tr -d '\r\n')
-MYSQL_HOST=$(cat /run/secrets/db_host 2>/dev/null | tr -d '\r\n' || echo "db")
+MYSQL_HOST=$(cat /run/secrets/db_host 2>/dev/null | tr -d '\r\n')
 
 # Read WordPress credentials from Docker secrets
 WP_ADMIN_USER=$(cat /run/secrets/wp_admin_user | tr -d '\r\n')
@@ -70,7 +70,7 @@ if ! wp core is-installed --allow-root; then
     # ---------------------------------------------------------
     # Strict 42 security rule: Do NOT use 'admin' or 'administrator' as the username!
     wp core install \
-        --url="pabmart2.42.fr" \
+        --url="${DOMAIN}" \
         --title="Inception - pabmart2" \
         --admin_user="${WP_ADMIN_USER}" \
         --admin_password="${WP_ADMIN_PASS}" \

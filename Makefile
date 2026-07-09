@@ -11,14 +11,6 @@
 # **************************************************************************** #
 
 # ------------------------------------------------------------------------------
-# AUTO-SUDO ENFORCEMENT
-# ------------------------------------------------------------------------------
-ifneq ($(shell id -u), 0)
-all clean fclean re fre setup down build up:
-	@sudo -E make --no-print-directory $@ $(MAKEFLAGS)
-else
-
-# ------------------------------------------------------------------------------
 # CONFIGURATION & ENVIRONMENT
 # ------------------------------------------------------------------------------
 include srcs/.env
@@ -34,22 +26,78 @@ CLR_YELLOW := \033[33m
 CLR_RED    := \033[31m
 
 # ------------------------------------------------------------------------------
+# SECRETS LIST
+# ------------------------------------------------------------------------------
+SECRETS = \
+    db_host.txt \
+    db_name.txt \
+    db_pass.txt \
+    db_user.txt \
+    wp_admin_email.txt \
+    wp_admin_pass.txt \
+    wp_admin_user.txt \
+    wp_user_email.txt \
+    wp_user_pass.txt \
+    wp_user.txt
+
+# ------------------------------------------------------------------------------
 # RULES
 # ------------------------------------------------------------------------------
 all: $(NAME)
 
-# 1. Create necessary directories on the host
-setup:
-	@echo "$(CLR_YELLOW)⚙️  Creating host directories...$(CLR_RESET)"
-	@mkdir -p $(DB_DIR)
-	@mkdir -p $(WP_DIR)
 
-# 2. Build docker images (uses cache by default unless specified)
+check-secrets:
+	@echo "$(CLR_YELLOW)🔍 Checking Docker secrets...$(CLR_RESET)"
+	@mkdir -p secrets
+	@missing=0; \
+	for s in $(SECRETS); do \
+		file="secrets/$$s"; \
+		if [ ! -e "$$file" ]; then \
+			touch "$$file"; \
+			chmod 600 "$$file"; \
+			echo "   $(CLR_YELLOW)⚠️  Created (empty): $$file$(CLR_RESET)"; \
+			missing=1; \
+		elif [ ! -s "$$file" ]; then \
+			echo "   $(CLR_RED)❌ Empty: $$file$(CLR_RESET)"; \
+			missing=1; \
+		else \
+			echo "   $(CLR_GREEN)✅ OK: $$file$(CLR_RESET)"; \
+		fi; \
+	done; \
+	if [ $$missing -eq 1 ]; then \
+		echo "$(CLR_RED)⚠️  Some secrets are missing or empty. Please fill them before running 'make'.$(CLR_RESET)"; \
+	else \
+		echo "$(CLR_GREEN)✨ All secrets are configured!$(CLR_RESET)"; \
+	fi
+
+
+# 1. Validate that all secrets are filled
+validate-secrets: check-secrets
+	@echo "$(CLR_YELLOW)📋 Validating secrets...$(CLR_RESET)"
+	@missing=0; \
+	for s in $(SECRETS); do \
+		file="secrets/$$s"; \
+		if [ ! -s "$$file" ]; then missing=1; fi; \
+	done; \
+	if [ $$missing -eq 1 ]; then \
+		echo "$(CLR_RED)❌ Cannot proceed: Some secrets are empty!$(CLR_RESET)"; \
+		exit 1; \
+	else \
+		echo "$(CLR_GREEN)✅ All secrets validated successfully!$(CLR_RESET)"; \
+	fi
+
+# 2. Create necessary directories on the host
+setup: validate-secrets
+	@echo "$(CLR_YELLOW)⚙️  Creating host directories...$(CLR_RESET)"
+	@sudo mkdir -p $(DB_DIR)
+	@sudo mkdir -p $(WP_DIR)
+
+# 3. Build docker images (uses cache by default unless specified)
 build:
 	@echo "$(CLR_YELLOW)🛠️  Building docker images...$(CLR_RESET)"
 	@$(DOCKER_COMPOSE) build $(BUILD_FLAGS)
 
-# 3. Launch already built containers
+# 4. Launch already built containers
 up:
 	@echo "$(CLR_YELLOW)🚀 Launching containers...$(CLR_RESET)"
 	@$(DOCKER_COMPOSE) up -d
@@ -64,7 +112,7 @@ $(NAME): setup build up
 down:
 	@$(DOCKER_COMPOSE) down $(FLAGS)
 
-# Cleans containers and images, bu
+# Cleans containers and images, but keeps volumes
 clean:
 	@echo "$(CLR_YELLOW)🧹 Removing containers and image layers...$(CLR_RESET)"
 	@$(MAKE) --no-print-directory down FLAGS="--rmi all"
@@ -78,8 +126,8 @@ fclean: clean
 	@docker builder prune -f > /dev/null
 
 	@echo "$(CLR_YELLOW)📂 Deleting physical host folders...$(CLR_RESET)"
-	@if [ -d "$(DB_DIR)" ]; then rm -rf $(DB_DIR); fi
-	@if [ -d "$(WP_DIR)" ]; then rm -rf $(WP_DIR); fi
+	@if [ -d "$(DB_DIR)" ]; then sudo rm -rf $(DB_DIR); fi
+	@if [ -d "$(WP_DIR)" ]; then sudo rm -rf $(WP_DIR); fi
 	@echo "$(CLR_RED)💥 Environment fully purged and reset.$(CLR_RESET)"
 
 # Quick recompile (keeps volumes) forcing a real NO-CACHE build
@@ -91,4 +139,3 @@ re: clean
 fre: fclean all
 
 .PHONY: all clean fclean re fre setup down build up
-endif
