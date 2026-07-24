@@ -9,6 +9,9 @@ set -e
 MYSQL_USER=$(cat /run/secrets/db_user | tr -d '\r\n')
 MYSQL_PASSWORD=$(cat /run/secrets/db_pass | tr -d '\r\n')
 MYSQL_DATABASE=$(cat /run/secrets/db_name | tr -d '\r\n')
+MYSQL_HOST=mariadb
+
+
 
 # Read WordPress credentials from Docker secrets
 WP_ADMIN_USER=$(cat /run/secrets/wp_admin_user | tr -d '\r\n')
@@ -29,7 +32,7 @@ echo "🚀 Starting WordPress initialization script..."
 # =========================================================
 # Loop until the database container is up, configured, and accepting connections
 echo "⏳ Waiting for MariaDB at ${MYSQL_HOST}..."
-until mysql -h"mariadb" -u"${MYSQL_USER}" --password="${MYSQL_PASSWORD}" -e "SELECT 1;" >/dev/null 2>&1; do
+until mysql -h"${MYSQL_HOST}" -u"${MYSQL_USER}" --password="${MYSQL_PASSWORD}" -e "SELECT 1;" >/dev/null 2>&1; do
     sleep 1
 done
 echo "✔ MariaDB is accessible"
