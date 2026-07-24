@@ -29,7 +29,6 @@ CLR_RED    := \033[31m
 # SECRETS LIST
 # ------------------------------------------------------------------------------
 SECRETS = \
-    db_host.txt \
     db_name.txt \
     db_pass.txt \
     db_user.txt \

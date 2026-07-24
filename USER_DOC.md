@@ -66,7 +66,6 @@ Main secret files:
 - `secrets/db_name.txt`
 - `secrets/db_user.txt`
 - `secrets/db_pass.txt`
-- `secrets/db_host.txt`
 - `secrets/wp_admin_user.txt`
 - `secrets/wp_admin_pass.txt`
 - `secrets/wp_admin_email.txt`

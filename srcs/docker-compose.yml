@@ -45,7 +45,6 @@ services:
       - db_user
       - db_pass
       - db_name
-      - db_host
       - wp_admin_email
       - wp_admin_pass
       - wp_admin_user
@@ -68,8 +67,6 @@ secrets:
     file: ../secrets/db_pass.txt
   db_name:
     file: ../secrets/db_name.txt
-  db_host:
-    file: ../secrets/db_host.txt
   wp_admin_email:
     file: ../secrets/wp_admin_email.txt
   wp_admin_pass:

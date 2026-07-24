@@ -49,7 +49,6 @@ Set `LOGIN` to your learner username before launching the project.
 
 The project expects these secret files in `secrets/`:
 
-- `db_host.txt`
 - `db_name.txt`
 - `db_pass.txt`
 - `db_user.txt`
